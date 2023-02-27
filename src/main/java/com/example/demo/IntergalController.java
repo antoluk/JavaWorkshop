@@ -12,40 +12,35 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 @RestController
-public class IntergalController
-{
+public class IntergalController {
     private static final Logger logger = LogManager.getLogger(IntergalController.class);
-    @GetMapping(value="/integral")
-        public ResponseEntity<?> ans(
-                       @RequestParam (value = "left") String lefts,
-                       @RequestParam (value = "right") String rights) {
+
+    @GetMapping(value = "/integral")
+    public ResponseEntity<?> ans(
+            @RequestParam(value = "left") String lefts,
+            @RequestParam(value = "right") String rights) {
         double left, right;
         SinIntegral eq;
 
-        try
-        {
+        try {
             logger.info("start parsing");
             left = Double.parseDouble(lefts);
             right = Double.parseDouble(rights);
-        } catch (NumberFormatException exp)
-            {
-                logger.error("Parsing error");
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,exp.getMessage()+" parsing error");
-            }
-
+        } catch (NumberFormatException exp) {
+            logger.error("Parsing error");
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exp.getMessage() + " parsing error");
+        }
         logger.info("parsing end");
         logger.info("counting integral");
 
-        try
-        {
-           eq= new SinIntegral(left,right);
-        }catch (OutOfboundExp exp)
-                {
-                    logger.error("Wrong borders");
-                    throw new ResponseStatusException(HttpStatus.valueOf(500),exp.getMessage());
-                }
+        try {
+            eq = new SinIntegral(left, right);
+        } catch (OutOfboundExp exp) {
+            logger.error("Wrong borders");
+            throw new ResponseStatusException(HttpStatus.valueOf(500), exp.getMessage());
+        }
 
         logger.info("GOOD ENDING");
-            return ResponseEntity.ok(eq);
-        }
+        return ResponseEntity.ok(eq);
+    }
 }
