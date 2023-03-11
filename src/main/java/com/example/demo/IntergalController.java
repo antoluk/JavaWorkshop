@@ -1,6 +1,6 @@
 package com.example.demo;
 
-import jakarta.annotation.Resource;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -15,7 +15,7 @@ import com.example.demo.Cache.Cache;
 @RestController
 public class IntergalController {
 
-    @Resource
+    @Autowired
     private Cache cache;
 
     private static final Logger logger = LogManager.getLogger(IntergalController.class);
