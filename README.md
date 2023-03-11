@@ -10,3 +10,5 @@ Project is located in main branch
   - Добавить обработку внутренних unchecked ошибок с возвратом 500 ошибки 
   - Добавить логирование действий и ошибок 
   - Написать unit test 
+- Collections intro, project structure 
+  -Добавить простейший кэш в виде in-memory Map для сервиса. Map должна содержаться в отдельном бине/классе, который должен добавляться в основной сервис с помощью dependency injection механизм Spring
