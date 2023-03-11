@@ -15,8 +15,14 @@ import com.example.demo.Cache.Cache;
 @RestController
 public class IntergalController {
 
-    @Autowired
+
     private Cache cache;
+
+    @Autowired
+    public void setCache(Cache cache) {
+        this.cache = cache;
+    }
+
 
     private static final Logger logger = LogManager.getLogger(IntergalController.class);
 
