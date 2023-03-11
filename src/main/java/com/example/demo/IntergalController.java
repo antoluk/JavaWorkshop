@@ -1,5 +1,6 @@
 package com.example.demo;
 
+import jakarta.annotation.Resource;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -9,10 +10,14 @@ import com.example.demo.errors.OutOfboundExp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.web.server.ResponseStatusException;
-
+import com.example.demo.Cache.Cache;
 
 @RestController
 public class IntergalController {
+
+    @Resource
+    private Cache cache;
+
     private static final Logger logger = LogManager.getLogger(IntergalController.class);
 
     @GetMapping(value = "/integral")
@@ -20,7 +25,12 @@ public class IntergalController {
             @RequestParam(value = "left") String lefts,
             @RequestParam(value = "right") String rights) {
         double left, right;
-        SinIntegral eq;
+        SinIntegral eq = cache.get(lefts + " " + rights);
+        if (eq != null) {
+            logger.info("Get from cache");
+            logger.info("GOOD ENDING");
+            return ResponseEntity.ok(eq);
+        }
 
         try {
             logger.info("start parsing");
@@ -41,6 +51,7 @@ public class IntergalController {
         }
 
         logger.info("GOOD ENDING");
+        cache.put(lefts + " " + rights, eq);
         return ResponseEntity.ok(eq);
     }
 }

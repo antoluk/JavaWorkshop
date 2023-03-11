@@ -2,10 +2,8 @@
 package com.example.demo;
 
 import com.example.demo.errors.OutOfboundExp;
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
+
 
 import static org.junit.jupiter.api.Assertions.*;
 
