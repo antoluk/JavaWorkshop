@@ -1,8 +1,8 @@
-package com.example.demo.Cache;
+package com.example.demo.cache;
 
 import java.util.*;
 
-import com.example.demo.SinIntegral;
+import com.example.demo.logic.SinIntegral;
 import org.springframework.stereotype.Component;
 
 @Component

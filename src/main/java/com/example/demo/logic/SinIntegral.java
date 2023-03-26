@@ -1,4 +1,4 @@
-package com.example.demo;
+package com.example.demo.logic;
 
 import com.example.demo.errors.OutOfboundExp;
 

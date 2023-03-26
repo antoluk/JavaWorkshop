@@ -1,5 +1,7 @@
-package com.example.demo;
+package com.example.demo.controllers;
 
+import com.example.demo.counter.CounterThread;
+import com.example.demo.logic.SinIntegral;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -10,7 +12,7 @@ import com.example.demo.errors.OutOfboundExp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.springframework.web.server.ResponseStatusException;
-import com.example.demo.Cache.Cache;
+import com.example.demo.cache.Cache;
 
 @RestController
 public class IntergalController {
@@ -30,6 +32,8 @@ public class IntergalController {
     public ResponseEntity<?> ans(
             @RequestParam(value = "left") String lefts,
             @RequestParam(value = "right") String rights) {
+        CounterThread counter= new CounterThread();
+        counter.start();
         double left, right;
         SinIntegral eq = cache.get(lefts + " " + rights);
         if (eq != null) {

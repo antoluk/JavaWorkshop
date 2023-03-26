@@ -2,6 +2,7 @@
 package com.example.demo;
 
 import com.example.demo.errors.OutOfboundExp;
+import com.example.demo.logic.SinIntegral;
 import org.junit.jupiter.api.Test;
 
 
