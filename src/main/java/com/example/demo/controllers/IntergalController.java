@@ -1,5 +1,4 @@
 package com.example.demo.controllers;
-
 import com.example.demo.counter.CounterThread;
 import com.example.demo.logic.SinIntegral;
 import org.springframework.beans.factory.annotation.Autowired;
