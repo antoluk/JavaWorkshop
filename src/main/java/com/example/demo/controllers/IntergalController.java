@@ -47,9 +47,9 @@ public class IntergalController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
         List<List<Double>> pvals = new ArrayList<>();
-        List<SinIntegral> answers = new ArrayList<>();
+        List<SinIntegral> answers;
         for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
-            pvals.add(new ArrayList<Double>());
+            pvals.add(new ArrayList<>());
             pvals.get(j).add(values.get(i));
             pvals.get(j).add(values.get(i + 1));
         }
@@ -89,7 +89,7 @@ public class IntergalController {
         if (values.size() % 2 != 0 || values.size() < 2) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         List<List<Double>> pvals = new ArrayList<>();
         for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
-            pvals.add(new ArrayList<Double>());
+            pvals.add(new ArrayList<>());
             pvals.get(j).add(values.get(i));
             pvals.get(j).add(values.get(i + 1));
         }

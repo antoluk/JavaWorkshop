@@ -1,7 +1,6 @@
 package com.example.demo.logic;
 
 import com.example.demo.errors.OutOfboundExp;
-import com.example.demo.logic.SinIntegralLogic;
 
 
 public class SinIntegral {
