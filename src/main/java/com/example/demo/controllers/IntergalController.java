@@ -1,17 +1,22 @@
 package com.example.demo.controllers;
+
 import com.example.demo.counter.CounterThread;
+import com.example.demo.errors.OutOfboundExp;
 import com.example.demo.logic.SinIntegral;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.MediaType;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import com.example.demo.errors.OutOfboundExp;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.springframework.web.server.ResponseStatusException;
 import com.example.demo.cache.Cache;
+import org.json.JSONObject;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Stream;
 
 @RestController
 public class IntergalController {
@@ -27,40 +32,96 @@ public class IntergalController {
 
     private static final Logger logger = LogManager.getLogger(IntergalController.class);
 
-    @GetMapping(value = "/integral")
+    @RequestMapping(value = "/integral",
+            method = RequestMethod.GET,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
     public ResponseEntity<?> ans(
-            @RequestParam(value = "left") String lefts,
-            @RequestParam(value = "right") String rights) {
-        CounterThread counter= new CounterThread();
+            @RequestParam(value = "values") List<Double> values) {
+        logger.info("Get request");
+        CounterThread counter = new CounterThread();
         counter.start();
-        double left, right;
-        SinIntegral eq = cache.get(lefts + " " + rights);
-        if (eq != null) {
-            logger.info("Get from cache");
-            logger.info("GOOD ENDING");
-            return ResponseEntity.ok(eq);
+        logger.info("Parsing");
+        if (values.size() % 2 != 0 || values.size() < 2) {
+            logger.error("wrong amount of parameters");
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
-        try {
-            logger.info("start parsing");
-            left = Double.parseDouble(lefts);
-            right = Double.parseDouble(rights);
-        } catch (NumberFormatException exp) {
-            logger.error("Parsing error");
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, exp.getMessage() + " parsing error");
+        List<List<Double>> pvals = new ArrayList<>();
+        List<SinIntegral> answers = new ArrayList<>();
+        for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
+            pvals.add(new ArrayList<Double>());
+            pvals.get(j).add(values.get(i));
+            pvals.get(j).add(values.get(i + 1));
         }
-        logger.info("parsing end");
-        logger.info("counting integral");
-
+        logger.info("Counting");
         try {
-            eq = new SinIntegral(left, right);
+            answers = Stream.concat(
+                            pvals.stream()
+                                    .filter(value -> cache.contains(value.hashCode()))
+                                    .map(value -> {
+                                        logger.info("get from cache");
+                                        return cache.get(value.hashCode());
+                                    }),
+                            pvals.stream()
+                                    .filter(value -> !cache.contains(value.hashCode()))
+                                    .map(value -> {
+                                        logger.info("count integral");
+                                        SinIntegral eq = new SinIntegral(value.get(0), value.get(1));
+                                        cache.put(value.hashCode(), eq);
+                                        return eq;
+                                    })
+                    )
+                    .toList();
         } catch (OutOfboundExp exp) {
-            logger.error("Wrong borders");
-            throw new ResponseStatusException(HttpStatus.valueOf(500), exp.getMessage());
+            logger.error("Wrong parameters");
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, exp.getMessage());
         }
+        logger.info("GOOD ENDING!");
+        return new ResponseEntity<>(answers, HttpStatus.OK);
+    }
 
-        logger.info("GOOD ENDING");
-        cache.put(lefts + " " + rights, eq);
-        return ResponseEntity.ok(eq);
+    @RequestMapping(value = "/bulk",
+            method = RequestMethod.POST,
+            produces = "application/json")
+    public ResponseEntity<?> getBulkAnswers(@RequestBody List<Double> values) {
+        logger.info("Post bulk start");
+        logger.info("parsing");
+        if (values.size() % 2 != 0 || values.size() < 2) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        List<List<Double>> pvals = new ArrayList<>();
+        for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
+            pvals.add(new ArrayList<Double>());
+            pvals.get(j).add(values.get(i));
+            pvals.get(j).add(values.get(i + 1));
+        }
+        JSONObject response = new JSONObject();
+        logger.info("Counting");
+        List<SinIntegral> answers = Stream.concat(
+                        pvals.stream()
+                                .filter(value -> cache.contains(value.hashCode()))
+                                .map(value -> {
+                                    logger.info("get from cache");
+                                    return cache.get(value.hashCode());
+                                }),
+                        pvals.stream()
+                                .filter(value -> !cache.contains(value.hashCode()))
+                                .map(value -> {
+                                    logger.info("count integral");
+                                    SinIntegral eq = new SinIntegral(value.get(0), value.get(1));
+                                    cache.put(value.hashCode(), eq);
+                                    return eq;
+                                })
+                )
+                .toList();
+        logger.info("Generate JSON");
+        response.put("answers", answers);
+        response.put("minInput", values.stream().min(Double::compare).orElse(null));
+        response.put("avgInp", values.stream().mapToDouble(a -> a).average().orElse(Double.MIN_VALUE));
+        response.put("maxInput", values.stream().max(Double::compare).orElse(null));
+        response.put("minAns", answers.stream().mapToDouble(SinIntegral::getAns).min().orElse(Double.MIN_VALUE));
+        response.put("maxAns", answers.stream().mapToDouble(SinIntegral::getAns).max().orElse(Double.MIN_VALUE));
+        response.put("avgAns", answers.stream().mapToDouble(SinIntegral::getAns).average().orElse(Double.MIN_VALUE));
+        response.put("amount", answers.size());
+        logger.info("GOOD ENDING!");
+        return new ResponseEntity<>(response.toString(), HttpStatus.OK);
     }
 }

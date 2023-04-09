@@ -8,21 +8,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class Cache {
 
-    private final Map<String, SinIntegral> cacheMap = new HashMap<>();
+    private final Map<Integer, SinIntegral> cacheMap = new HashMap<>();
 
-    public void put(String key, SinIntegral value) {
+    public void put(Integer key, SinIntegral value) {
         cacheMap.put(key, value);
     }
 
-    public SinIntegral get(String key) {
+    public SinIntegral get(Integer key) {
         return cacheMap.get(key);
     }
 
-    public void remove(String key) {
+    public void remove(Integer key) {
         cacheMap.remove(key);
     }
 
     public void clear() {
         cacheMap.clear();
+    }
+
+    public Boolean contains(int value) {
+        return this.cacheMap.containsKey(value);
     }
 }

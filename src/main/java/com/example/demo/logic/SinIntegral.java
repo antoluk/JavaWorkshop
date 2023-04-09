@@ -1,6 +1,7 @@
 package com.example.demo.logic;
 
 import com.example.demo.errors.OutOfboundExp;
+import com.example.demo.logic.SinIntegralLogic;
 
 
 public class SinIntegral {
@@ -10,13 +11,7 @@ public class SinIntegral {
         if (right < left) {
             throw new OutOfboundExp("Wrong borders");
         }
-        double h = Math.abs((double) (right - left) / 100);
-        ans = (Math.sin(left) + Math.sin(right)) / 2;
-        for (double i = left + h; i <= right - h + 0.00000001; i += h) {
-            ans += Math.sin(i);
-        }
-        ans *= h;
-        ans = (double) Math.round(ans * 10000) / 10000;
+        ans = SinIntegralLogic.counting(left, right);
     }
 
     public double getAns() {
