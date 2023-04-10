@@ -30,7 +30,9 @@ public class IntegralController {
     }
 
 
-    private static final Logger logger = LogManager.getLogger(IntegralController.class);
+    private static final Logger LOGGER = LogManager.getLogger(IntegralController.class);
+
+    private List<SinIntegral> ans;
 
     @RequestMapping(value = "/integral",
             method = RequestMethod.GET,
@@ -38,65 +40,65 @@ public class IntegralController {
     )
     public ResponseEntity<?> ans(
             @RequestParam(value = "values") List<Double> values) {
-        logger.info("Get request");
+        LOGGER.info("Get request");
         CounterThread counter = new CounterThread();
         counter.start();
-        logger.info("Parsing");
+        LOGGER.info("Parsing");
         if (values.size() % 2 != 0 || values.size() < 2) {
-            logger.error("wrong amount of parameters");
+            LOGGER.error("wrong amount of parameters");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        List<SinIntegral> answers;
-        answers = generateAnswers(values);
-        logger.info("GOOD ENDING!");
-        return new ResponseEntity<>(answers, HttpStatus.OK);
+        ans = generateAnswers(values);
+        LOGGER.info("GOOD ENDING!");
+        return new ResponseEntity<>(ans, HttpStatus.OK);
     }
 
     @RequestMapping(value = "/bulk",
             method = RequestMethod.POST,
             produces = "application/json")
     public ResponseEntity<?> getBulkAnswers(@RequestBody List<Double> values) {
-        logger.info("Post bulk start");
-        logger.info("parsing");
-        if (values.size() % 2 != 0 || values.size() < 2) return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-        List<SinIntegral> answers;
-        answers = generateAnswers(values);
+        LOGGER.info("Post bulk start");
+        LOGGER.info("parsing");
+        if (values.size() % 2 != 0 || values.size() < 2) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+        ans = generateAnswers(values);
 
         JSONObject response = new JSONObject();
-        logger.info("Generate JSON");
-        response.put("answers", answers);
+        LOGGER.info("Generate JSON");
+        response.put("answers", ans);
         response.put("minInput", values.stream().min(Double::compare).orElse(null));
         response.put("avgInp", values.stream().mapToDouble(a -> a).average().orElse(Double.MIN_VALUE));
         response.put("maxInput", values.stream().max(Double::compare).orElse(null));
-        response.put("minAns", answers.stream().mapToDouble(SinIntegral::getAns).min().orElse(Double.MIN_VALUE));
-        response.put("maxAns", answers.stream().mapToDouble(SinIntegral::getAns).max().orElse(Double.MIN_VALUE));
-        response.put("avgAns", answers.stream().mapToDouble(SinIntegral::getAns).average().orElse(Double.MIN_VALUE));
-        response.put("amount", answers.size());
-        logger.info("GOOD ENDING!");
+        response.put("minAns", ans.stream().mapToDouble(SinIntegral::getAns).min().orElse(Double.MIN_VALUE));
+        response.put("maxAns", ans.stream().mapToDouble(SinIntegral::getAns).max().orElse(Double.MIN_VALUE));
+        response.put("avgAns", ans.stream().mapToDouble(SinIntegral::getAns).average().orElse(Double.MIN_VALUE));
+        response.put("amount", ans.size());
+        LOGGER.info("GOOD ENDING!");
         return new ResponseEntity<>(response.toString(), HttpStatus.OK);
     }
 
     public List<SinIntegral> generateAnswers(List<Double> values) {
-        List<List<Double>> pvals = new ArrayList<>();
+        List<List<Double>> parsedValues = new ArrayList<>();
         for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
-            pvals.add(new ArrayList<>());
-            pvals.get(j).add(values.get(i));
-            pvals.get(j).add(values.get(i + 1));
+            parsedValues.add(new ArrayList<>());
+            parsedValues.get(j).add(values.get(i));
+            parsedValues.get(j).add(values.get(i + 1));
         }
-        logger.info("Counting");
+        LOGGER.info("Counting");
         List<SinIntegral> answers;
         try {
             answers = Stream.concat(
-                            pvals.stream()
+                            parsedValues.stream()
                                     .filter(value -> cache.contains(value.hashCode()))
                                     .map(value -> {
-                                        logger.info("get from cache");
+                                        LOGGER.info("get from cache");
                                         return cache.get(value.hashCode());
                                     }),
-                            pvals.stream()
+                            parsedValues.stream()
                                     .filter(value -> !cache.contains(value.hashCode()))
                                     .map(value -> {
-                                        logger.info("count integral");
+                                        LOGGER.info("count integral");
                                         SinIntegral eq = new SinIntegral(value.get(0), value.get(1));
                                         cache.put(value.hashCode(), eq);
                                         return eq;
