@@ -11,7 +11,7 @@ import com.example.demo.counter.Counter;
 
 @RestController
 public class CountConroller {
-    private static final Logger logger = LogManager.getLogger(IntergalController.class);
+    private static final Logger logger = LogManager.getLogger(IntegralController.class);
 
     @GetMapping(value = "/counter")
     public ResponseEntity<?> getCounter() {
