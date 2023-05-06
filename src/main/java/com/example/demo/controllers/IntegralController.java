@@ -1,38 +1,39 @@
 package com.example.demo.controllers;
 
+import com.example.demo.cache.Cache;
 import com.example.demo.counter.CounterThread;
-import com.example.demo.errors.OutOfboundExp;
+import com.example.demo.exeptions.OutOfboundExp;
 import com.example.demo.logic.SinIntegral;
+import com.example.demo.repo.SinIntegralRepository;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.web.bind.annotation.*;
 import org.springframework.http.ResponseEntity;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-import com.example.demo.cache.Cache;
-import org.json.JSONObject;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Stream;
 
 @RestController
 public class IntegralController {
 
 
+    private static final Logger LOGGER = LogManager.getLogger(IntegralController.class);
     private Cache cache;
+    @Autowired
+    private SinIntegralRepository sinIntegralRepository;
 
     @Autowired
     public void setCache(Cache cache) {
         this.cache = cache;
     }
-
-
-    private static final Logger LOGGER = LogManager.getLogger(IntegralController.class);
-
-    private List<SinIntegral> ans;
 
     @RequestMapping(value = "/integral",
             method = RequestMethod.GET,
@@ -48,9 +49,18 @@ public class IntegralController {
             LOGGER.error("wrong amount of parameters");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        ans = generateAnswers(values);
-        LOGGER.info("GOOD ENDING!");
-        return new ResponseEntity<>(ans, HttpStatus.OK);
+        List<List<Double>> parsedValues = parseInput(values);
+        List<Long> ids = new ArrayList<>();
+        for (List<Double> parsedValue : parsedValues) {
+            ids.add((long) parsedValue.hashCode());
+        }
+        CompletableFuture<List<SinIntegral>> answers = CompletableFuture.supplyAsync(() -> generateAnswers(parsedValues));
+        answers.thenAccept(this::saveToDB);
+        return new ResponseEntity<>(ids, HttpStatus.OK);
+    }
+
+    void saveToDB(List<SinIntegral> answers) {
+        sinIntegralRepository.saveAll(answers);
     }
 
     @RequestMapping(value = "/bulk",
@@ -62,8 +72,9 @@ public class IntegralController {
         if (values.size() % 2 != 0 || values.size() < 2) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        ans = generateAnswers(values);
-
+        List<List<Double>> parsedValues = parseInput(values);
+        List<SinIntegral> ans = generateAnswers(parsedValues);
+        sinIntegralRepository.saveAll(ans);
         JSONObject response = new JSONObject();
         LOGGER.info("Generate JSON");
         response.put("answers", ans);
@@ -78,13 +89,29 @@ public class IntegralController {
         return new ResponseEntity<>(response.toString(), HttpStatus.OK);
     }
 
-    public List<SinIntegral> generateAnswers(List<Double> values) {
+    @GetMapping("/result/{id}")
+    public ResponseEntity<?> result(@PathVariable("id") Long id) {
+        SinIntegral eq = sinIntegralRepository.findById(id).orElse(null);
+        if (eq == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        LOGGER.info("get from database");
+        return new ResponseEntity<>(eq, HttpStatus.OK);
+    }
+
+    public List<List<Double>> parseInput(List<Double> values) {
+        LOGGER.info("Parsing");
         List<List<Double>> parsedValues = new ArrayList<>();
         for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
             parsedValues.add(new ArrayList<>());
             parsedValues.get(j).add(values.get(i));
             parsedValues.get(j).add(values.get(i + 1));
         }
+        return parsedValues;
+    }
+
+    public List<SinIntegral> generateAnswers(List<List<Double>> parsedValues) {
+
         LOGGER.info("Counting");
         List<SinIntegral> answers;
         try {
@@ -92,16 +119,24 @@ public class IntegralController {
                             parsedValues.stream()
                                     .filter(value -> cache.contains(value.hashCode()))
                                     .map(value -> {
-                                        LOGGER.info("get from cache");
-                                        return cache.get(value.hashCode());
-                                    }),
+                                        LOGGER.info("Get from cache");
+                                        return cache.get((long) value.hashCode());
+                                    })
+                            ,
                             parsedValues.stream()
                                     .filter(value -> !cache.contains(value.hashCode()))
                                     .map(value -> {
-                                        LOGGER.info("count integral");
-                                        SinIntegral eq = new SinIntegral(value.get(0), value.get(1));
-                                        cache.put(value.hashCode(), eq);
-                                        return eq;
+                                        Optional<SinIntegral> integralFromDB = sinIntegralRepository.findById((long) value.hashCode());
+                                        if (integralFromDB.isEmpty()) {
+                                            SinIntegral eq;
+                                            LOGGER.info("count integral");
+                                            eq = new SinIntegral(value.get(0), value.get(1));
+                                            eq.setId((long) value.hashCode());
+                                            cache.put(eq.getId(), eq);
+                                            return eq;
+                                        }
+                                        LOGGER.info("Get from database");
+                                        return integralFromDB.get();
                                     })
                     )
                     .toList();
