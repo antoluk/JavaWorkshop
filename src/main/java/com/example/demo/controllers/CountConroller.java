@@ -11,11 +11,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 public class CountConroller {
-    private static final Logger logger = LogManager.getLogger(IntegralController.class);
+    private static final Logger LOGGER = LogManager.getLogger(CountConroller.class);
 
     @GetMapping(value = "/counter")
     public ResponseEntity<?> getCounter() {
-        logger.info("Get counter");
+        LOGGER.info("Get counter");
         return new ResponseEntity<>(Counter.getCount(), HttpStatus.OK);
     }
 }

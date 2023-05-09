@@ -17,6 +17,7 @@ public class SinIntegral {
         ans = SinIntegralLogic.counting(left, right);
     }
 
+
     public SinIntegral() {
         this.ans = 0;
     }
@@ -33,7 +34,4 @@ public class SinIntegral {
         return ans;
     }
 
-    public void setAns(double ans) {
-        this.ans = ans;
-    }
 }
