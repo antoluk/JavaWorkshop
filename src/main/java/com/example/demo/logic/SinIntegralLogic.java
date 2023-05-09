@@ -1,5 +1,6 @@
 package com.example.demo.logic;
 
+
 public class SinIntegralLogic {
     public static double counting(double left, double right) {
         double h = Math.abs((right - left) / 100);

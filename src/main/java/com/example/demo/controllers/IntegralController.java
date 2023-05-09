@@ -13,7 +13,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -44,18 +43,24 @@ public class IntegralController {
         LOGGER.info("Get request");
         CounterThread counter = new CounterThread();
         counter.start();
-        LOGGER.info("Parsing");
         if (values.size() % 2 != 0 || values.size() < 2) {
             LOGGER.error("wrong amount of parameters");
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        List<List<Double>> parsedValues = parseInput(values);
+        List<List<Double>> parsedValues;
+        try {
+            parsedValues = parseInput(values);
+        }catch (OutOfboundExp exp)
+        {
+           return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         List<Long> ids = new ArrayList<>();
         for (List<Double> parsedValue : parsedValues) {
             ids.add((long) parsedValue.hashCode());
         }
-        CompletableFuture<List<SinIntegral>> answers = CompletableFuture.supplyAsync(() -> generateAnswers(parsedValues));
-        answers.thenAccept(this::saveToDB);
+            CompletableFuture<List<SinIntegral>> answers = CompletableFuture.supplyAsync(() -> generateAnswers(parsedValues));
+            answers.thenAccept(this::saveToDB);
+
         return new ResponseEntity<>(ids, HttpStatus.OK);
     }
 
@@ -72,7 +77,13 @@ public class IntegralController {
         if (values.size() % 2 != 0 || values.size() < 2) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-        List<List<Double>> parsedValues = parseInput(values);
+        List<List<Double>> parsedValues;
+        try {
+            parsedValues = parseInput(values);
+        }catch (OutOfboundExp exp)
+        {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
         List<SinIntegral> ans = generateAnswers(parsedValues);
         sinIntegralRepository.saveAll(ans);
         JSONObject response = new JSONObject();
@@ -103,6 +114,10 @@ public class IntegralController {
         LOGGER.info("Parsing");
         List<List<Double>> parsedValues = new ArrayList<>();
         for (int i = 0, j = 0; i < values.size(); i += 2, j++) {
+            if(values.get(i)>values.get(i + 1))
+            {
+                throw new OutOfboundExp("bad values");
+            }
             parsedValues.add(new ArrayList<>());
             parsedValues.get(j).add(values.get(i));
             parsedValues.get(j).add(values.get(i + 1));
@@ -114,7 +129,6 @@ public class IntegralController {
 
         LOGGER.info("Counting");
         List<SinIntegral> answers;
-        try {
             answers = Stream.concat(
                             parsedValues.stream()
                                     .filter(value -> cache.contains(value.hashCode()))
@@ -130,7 +144,7 @@ public class IntegralController {
                                         if (integralFromDB.isEmpty()) {
                                             SinIntegral eq;
                                             LOGGER.info("count integral");
-                                            eq = new SinIntegral(value.get(0), value.get(1));
+                                                eq = new SinIntegral(value.get(0), value.get(1));
                                             eq.setId((long) value.hashCode());
                                             cache.put(eq.getId(), eq);
                                             return eq;
@@ -140,9 +154,6 @@ public class IntegralController {
                                     })
                     )
                     .toList();
-        } catch (OutOfboundExp exp) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, exp.getMessage());
-        }
         return answers;
     }
 }
